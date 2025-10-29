@@ -14,7 +14,7 @@ llm = LLMHandler()
 
 # Test questions
 questions = [
-    "what I should do"
+    "I have pain in my eyes"
     ]
 
 for q in questions:
