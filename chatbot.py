@@ -165,6 +165,7 @@ Format your responses clearly:
             answer = self.llm.generate(
                 prompt=user_question,
                 context=context,
+                history=[{"user": turn["user"], "bot": turn["bot"]} for turn in history],
                 system_instruction=self.SYSTEM_INSTRUCTION
             )
             
