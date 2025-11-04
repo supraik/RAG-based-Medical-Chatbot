@@ -1,28 +1,35 @@
 # Core dependencies
 python-dotenv==1.0.1
 pinecone-client>=5.0.0
+
+# LangChain ecosystem
 langchain>=0.1.0
 langchain-core>=0.1.0
 langchain-community>=0.1.0
 langchain-pinecone>=0.1.0
 langchain-huggingface>=0.1.0
-langchain-openai>=0.1.0
+
+# Google Gemini
+google-generativeai>=0.8.3
 
 # Machine Learning and NLP
 transformers==4.45.2
 sentence-transformers==3.0.1
-huggingface-hub==0.36.0
+torch>=2.0.0
 accelerate==0.34.2
-sentence-transformers
-torch
 
 # Document Processing
 pypdf==4.3.1
 
 # Frontend (optional)
-gradio>=4.19.2  # Only needed if using the frontend
+gradio>=4.19.2
 
 # Testing and Development
-pytest>=7.0.0  # For running tests
-black>=23.0.0  # For code formatting
-isort>=5.0.0   # For import sorting
+pytest>=7.0.0
+black>=23.0.0
+isort>=5.0.0
+flake8>=6.0.0
+
+# Additional utilities
+tqdm>=4.65.0  # Progress bars
+colorlog>=6.7.0  # Colored logging
