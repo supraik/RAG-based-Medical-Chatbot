@@ -6,3 +6,14 @@ __pycache__/
 .vscode/
 .env
 data/*.pdf
+
+./frontend/node_modules/
+/frontend/package-lock.json
+/frontend/package.json
+/frontend/.next/
+
+node_modules/
+frontend/node_modules/
+frontend/.next/
+frontend/dist/
+frontend/out/
