@@ -36,6 +36,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        "*",
         "http://localhost:3000",  # Next.js dev server
         "http://localhost:3001",
         "http://localhost:5500",  # Live Server
