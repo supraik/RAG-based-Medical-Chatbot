@@ -1,155 +1,328 @@
-# HaleAI
+# HaleAI Medical Chatbot
 
-we need to create a virtual environment as well : 
-how ? 
+A production-ready RAG (Retrieval-Augmented Generation) chatbot for medical information powered by Google Gemini, Pinecone vector database, and a clean React frontend.
 
+## 🚀 Quick Start
+
+### Backend Setup
+
+```bash
+cd backend
+python backend_api.py
+```
+
+Backend will start on http://localhost:8000
+
+### Frontend Setup
+
+```bash
+cd frontend
+
+# Option 1: Double-click start_server.bat (Windows)
+# Option 2: PowerShell
+./start_server.ps1
+
+# Option 3: Manual
+python -m http.server 5500
+```
+
+Frontend will open at http://localhost:5500/index.html
+
+## 📋 Project Structure
+
+```
+HaleAI/
+├── backend/
+│   ├── backend_api.py      # FastAPI REST API
+│   ├── chatbot.py          # Main chatbot logic
+│   ├── llm_handler.py      # Gemini/HuggingFace LLM
+│   ├── vector_store.py     # Pinecone vector DB
+│   ├── rag_processor.py    # RAG pipeline & reranking
+│   ├── data_processor.py   # PDF processing
+│   ├── config.py           # Configuration
+│   ├── requirements.txt    # Python dependencies
+│   ├── src/
+│   │   ├── helper.py       # Utility functions
+│   │   └── prompt.py       # System prompts
+│   └── data/               # Medical PDF documents
+├── frontend/
+│   ├── index.html          # React UI (self-contained)
+│   ├── start_server.bat    # Windows launcher
+│   ├── start_server.ps1    # PowerShell launcher
+│   └── README.md           # Frontend documentation
+└── README.md               # This file
+```
+
+## 🔧 Prerequisites
+
+- **Python 3.8+** (3.11 recommended)
+- **Pinecone Account** (free tier: https://app.pinecone.io/)
+- **Google AI Studio API Key** (free: https://aistudio.google.com/app/apikey)
+- **HuggingFace Token** (optional, for fallback: https://huggingface.co/settings/tokens)
+
+## 📦 Installation
+
+### 1. Create Virtual Environment
+
+```bash
+# Using conda (recommended)
 conda create -n HaleAI python=3.11 -y
-pip install -U "langchain>=0.3.7" "langchain-core>=0.3.7" "langchain-pinecone>=0.1.0" "langchain-openai>=0.2.0" packaging>=24.2
+conda activate HaleAI
 
-# HaleAI Medical Chatbot - Setup Guide
-
-## Prerequisites
-- Python 3.8 or higher
-- Internet connection (for API calls)
-- Pinecone account (free tier available)
-- Hugging Face account (free)
-
-## Step 1: Clone/Download Project
-```bash
-# Your project structure should look like:
-# haleai/
-# ├── main.py
-# ├── chatbot.py
-# ├── llm_handler.py
-# ├── vector_store.py
-# ├── data_processor.py
-# ├── config.py
-# ├── requirements.txt
-# ├── .env
-# └── data/
-#     └── your_medical_pdfs.pdf
-```
-
-## Step 2: Create Virtual Environment
-```bash
-# Create virtual environment
+# OR using venv
 python -m venv venv
-
-# Activate it
-# On Windows:
-venv\Scripts\activate
-# On Mac/Linux:
-source venv/bin/activate
+# Windows: venv\Scripts\activate
+# Linux/Mac: source venv/bin/activate
 ```
 
-## Step 3: Install Dependencies
+### 2. Install Dependencies
+
 ```bash
+cd backend
 pip install -r requirements.txt
 ```
 
-## Step 4: Get API Keys
+### 3. Configure API Keys
 
-### Pinecone API Key
-1. Go to https://app.pinecone.io/
-2. Sign up for free account
-3. Create a new project
-4. Copy your API key from the dashboard
+Create a `.env` file in the `backend/` folder:
 
-### Hugging Face Token
-1. Go to https://huggingface.co/settings/tokens
-2. Create a new token with "read" permissions
-3. Copy the token
-
-## Step 5: Configure Environment Variables
-Create a `.env` file in the project root:
-```
-PINECONE_API_KEY=your_actual_pinecone_key
-HF_TOKEN=your_actual_huggingface_token
+```env
+PINECONE_API_KEY=your_pinecone_api_key
+GOOGLE_API_KEY=your_gemini_api_key
+HF_TOKEN=your_huggingface_token  # Optional
 ```
 
-## Step 6: Add Medical Documents
-Place your PDF files in the `data/` folder
+### 4. Add Medical Documents
 
-## Step 7: Run Setup (First Time Only)
+Place PDF files in `backend/data/` folder
+
+### 5. Setup Vector Database (First Time Only)
+
 ```bash
-python main.py
-# Select option 1 (Setup)
+cd backend
+python setup.py
 ```
 
 This will:
+
 - Process your PDF documents
-- Create embeddings
-- Upload to Pinecone vector database
+- Generate embeddings
+- Upload to Pinecone vector store
 
-## Step 8: Start Chatting
+## 🎯 Features
+
+### Backend (FastAPI)
+
+- ✅ **Google Gemini Integration** (gemini-1.5-flash)
+- ✅ **HuggingFace Fallback** (google/flan-t5-small)
+- ✅ **Pinecone Vector Store** (384-dim embeddings)
+- ✅ **Cross-Encoder Reranking** (ms-marco-MiniLM-L-6-v2)
+- ✅ **Streaming Responses** (Server-Sent Events)
+- ✅ **Session Management** (conversation history)
+- ✅ **CORS Enabled** (all frontend ports)
+
+### Frontend (HTML/React)
+
+- ✅ **No Build Required** (CDN-based React)
+- ✅ **Streaming Chat UI** (real-time token display)
+- ✅ **Markdown Rendering** (bold, italic, code, lists)
+- ✅ **Conversation History** (maintained across messages)
+- ✅ **Analytics Dashboard** (accuracy, latency metrics)
+- ✅ **Dark Mode** (toggle)
+- ✅ **Export Conversations** (JSON/TXT)
+- ✅ **Responsive Design** (mobile-friendly)
+
+## 🔌 API Endpoints
+
+| Endpoint                         | Method | Description          |
+| -------------------------------- | ------ | -------------------- |
+| `/api/health`                    | GET    | Health check         |
+| `/api/chat`                      | POST   | Non-streaming chat   |
+| `/api/chat/stream`               | POST   | Streaming chat (SSE) |
+| `/api/analytics`                 | GET    | System analytics     |
+| `/api/conversations/{id}/export` | GET    | Export conversation  |
+
+## ⚙️ Configuration
+
+Edit `backend/config.py` to customize:
+
+```python
+# LLM Configuration
+GEMINI_MODEL = "gemini-1.5-flash"           # Gemini model
+USE_HF_FALLBACK = True                       # Enable HF fallback
+HF_FALLBACK_MODEL = "google/flan-t5-small"   # Fallback model
+
+# Vector Store
+PINECONE_INDEX_NAME = "medical-chatbot"
+EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+
+# RAG Settings
+CHUNK_SIZE = 800
+CHUNK_OVERLAP = 200
+RETRIEVER_K = 8          # Documents to retrieve
+RERANK_TOP_K = 3         # Documents after reranking
+```
+
+## 🧪 Testing
+
 ```bash
-python main.py
-# Select option 2 (Chat)
+cd backend
+
+# Test vector store connection
+python test_pinecone.py
+
+# Test generic RAG pipeline
+python test_generic_rag.py
+
+# Test environment variables
+python test/test_env.py
 ```
 
-## Alternative Free Models
+## 📖 Usage
 
-If Mistral-7B-Instruct doesn't work well or is too slow, you can try these alternatives by changing `LLM_MODEL` in `config.py`:
+### Starting the Application
 
-### Option 1: Zephyr (Good for chat)
-```python
-LLM_MODEL = "HuggingFaceH4/zephyr-7b-beta"
+**Terminal 1 - Backend:**
+
+```bash
+cd backend
+python backend_api.py
 ```
 
-### Option 2: Llama 2 (Popular, well-tested)
-```python
-LLM_MODEL = "meta-llama/Llama-2-7b-chat-hf"
-```
-Note: May require accepting license on HuggingFace
+**Terminal 2 - Frontend:**
 
-### Option 3: Phi-2 (Smaller, faster)
-```python
-LLM_MODEL = "microsoft/phi-2"
+```bash
+cd frontend
+python -m http.server 5500
 ```
 
-## Troubleshooting
+**Open Browser:**
+http://localhost:5500/index.html
 
-### "Model is loading" error
-- First API call takes 20-60 seconds to load the model
-- Subsequent calls are faster
-- Just wait and it will work
+### Using the Chat
 
-### Rate limiting
-- Free Hugging Face API has rate limits
-- Wait a minute between queries if you hit limits
-- Consider upgrading to Pro for unlimited access
+1. Type your medical question
+2. Press Enter or click Send
+3. Watch the response stream in real-time
+4. Conversation context is maintained automatically
 
-### Out of memory
-- You're using API, so no local memory issues!
-- If embeddings cause issues, reduce CHUNK_SIZE in config.py
+### Example Questions
 
-### Slow responses
-- First query is slow (model loading)
-- Later queries are faster
-- Try smaller models like phi-2
+- "What are the symptoms of diabetes?"
+- "How is hypertension treated?"
+- "What causes migraine headaches?"
 
-## Usage Tips
+## 🐛 Troubleshooting
 
-1. **First query is slow**: The model needs to load (20-60 seconds)
-2. **Be patient**: API calls take 3-10 seconds per response
-3. **Rate limits**: Free tier allows ~100 requests/hour
-4. **Better results**: Ask specific, clear medical questions
+### Backend Issues
 
-## Cost Comparison
+**"Pinecone connection failed"**
 
-| Resource | Free Tier | Cost |
-|----------|-----------|------|
-| Pinecone | 1 index, 100K vectors | Free forever |
-| Hugging Face API | ~100 requests/hour | Free (Pro: $9/month) |
-| Embeddings | Unlimited | Free (local) |
+- Check `PINECONE_API_KEY` in `.env`
+- Verify index name matches `config.py`
 
-**Total Cost: $0** (with free tier limits)
+**"Gemini API error"**
 
-## Support
+- Check `GOOGLE_API_KEY` in `.env`
+- Verify API quota (free tier limits)
+- Enable HuggingFace fallback
 
-If you encounter issues:
-1. Check your API keys are correct
-2. Ensure you have internet connection
-3. Wait if model is loading
-4. Try alternative models
-5. Check Hugging Face model status page
+**"ModuleNotFoundError"**
+
+- Activate virtual environment
+- Run `pip install -r requirements.txt`
+
+### Frontend Issues
+
+**"Failed to fetch"**
+
+- Ensure backend is running on port 8000
+- Check CORS configuration in `backend_api.py`
+
+**Streaming not working**
+
+- Check browser console for errors
+- Verify `/api/chat/stream` endpoint accessibility
+
+**Markdown not rendering**
+
+- Clear browser cache
+- Refresh page (Ctrl+F5)
+
+## 💡 Tips for Best Results
+
+1. **First Query is Slow**: Model loading takes 20-60 seconds initially
+2. **Be Specific**: Ask clear, focused medical questions
+3. **Context Matters**: The chatbot maintains conversation history
+4. **Check Sources**: Review the source documents provided with answers
+5. **Rate Limits**: Free tier APIs have usage limits
+
+## 🚢 Deployment
+
+### Backend (FastAPI)
+
+```bash
+# Production server
+pip install uvicorn[standard]
+uvicorn backend_api:app --host 0.0.0.0 --port 8000 --workers 4
+```
+
+### Frontend
+
+Simply host `frontend/index.html` on any static file server:
+
+- GitHub Pages
+- Netlify
+- Vercel
+- AWS S3 + CloudFront
+
+## 📊 System Requirements
+
+**Minimum:**
+
+- CPU: 2 cores
+- RAM: 4 GB
+- Disk: 2 GB free
+
+**Recommended:**
+
+- CPU: 4+ cores
+- RAM: 8 GB
+- Disk: 5 GB free
+
+## 🔐 Security Notes
+
+- Never commit `.env` file to git
+- Use environment variables for production
+- Implement rate limiting for production deployment
+- Add authentication for sensitive medical data
+
+## 📝 License
+
+This project is for educational purposes. Consult with medical professionals for actual medical advice.
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+## 📞 Support
+
+For issues and questions:
+
+1. Check the troubleshooting section
+2. Review backend logs in `backend/logs/`
+3. Check browser console for frontend errors
+
+## 🎓 Learn More
+
+- [FastAPI Documentation](https://fastapi.tiangolo.com/)
+- [Pinecone Documentation](https://docs.pinecone.io/)
+- [Google Gemini API](https://ai.google.dev/docs)
+- [RAG Explained](https://www.pinecone.io/learn/retrieval-augmented-generation/)
+
+---
+
+**Built with ❤️ using FastAPI, React, Pinecone, and Google Gemini**

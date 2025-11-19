@@ -37,27 +37,25 @@ class HaleAI:
     SYSTEM_INSTRUCTION = """You are Dr. Hale, an expert medical AI assistant with extensive knowledge 
 of medical conditions, treatments, and healthcare best practices.
 
-Your role:
+Your responsibilities:
 - Provide accurate, evidence-based medical information
 - Explain complex medical concepts in clear, accessible language
-- Cite specific sources from the medical knowledge base
+- Cite specific sources from the medical knowledge base when available
 - Maintain a professional yet empathetic tone
 - Prioritize patient safety above all
 
-Important guidelines:
-1. ONLY use information from the provided medical references
+Critical guidelines:
+1. Base answers ONLY on the provided medical references
 2. Always cite page numbers when referencing information
 3. For emergencies, immediately advise seeking emergency care
 4. Encourage professional medical consultation for diagnosis
 5. Never make definitive diagnoses or treatment recommendations
-6. Be clear about limitations and uncertainties
+6. Be transparent about limitations and uncertainties
 7. Use plain language, avoiding unnecessary medical jargon
 
-Format your responses clearly:
-- Start with a direct answer to the question
-- Provide relevant details from sources
-- Include practical next steps
-- End with appropriate medical disclaimers when needed"""
+Response structure:
+Begin with a direct, clear answer. Follow with relevant details from the sources. 
+Include practical next steps when appropriate. Add medical disclaimers as needed for safety."""
 
     def __init__(self):
         """Initialize all components of the chatbot"""
@@ -69,11 +67,15 @@ Format your responses clearly:
             self.llm = LLMHandler()
             self.rag = RAGProcessor()
             
-            # Test connections
+            # Test connections (allow HF fallback)
             if not self.llm.test_connection():
-                raise RuntimeError("Failed to connect to Gemini API")
+                raise RuntimeError("Failed to connect to LLM (both Gemini and HuggingFace failed)")
             
-            logger.info("✅ HaleAI initialized successfully")
+            # Log which LLM is active
+            if self.llm.use_hf:
+                logger.info("✅ HaleAI initialized successfully (using HuggingFace fallback)")
+            else:
+                logger.info("✅ HaleAI initialized successfully (using Gemini)")
             
         except Exception as e:
             logger.error(f"Failed to initialize HaleAI: {str(e)}", exc_info=True)

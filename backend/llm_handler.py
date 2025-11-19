@@ -85,23 +85,24 @@ class LLMHandler:
         self.chat = None
 
     def _setup_hf_model(self) -> None:
-        """Setup a Hugging Face pipeline as a fallback model (text2text)."""
-        try:
-            from transformers import pipeline
-        except Exception as e:
-            logger.error("transformers library is required for HF fallback: %s", e)
-            raise
-
-        model_name = getattr(Config, 'HF_FALLBACK_MODEL', 'google/flan-t5-small')
-        # Use text2text-generation (works well with FLAN-style models)
-        try:
-            self.hf_pipeline = pipeline('text2text-generation', model=model_name, device=-1)
-        except Exception:
-            # Try text-generation as a fallback
-            self.hf_pipeline = pipeline('text-generation', model=model_name, device=-1)
-
-        # mark model as HF-backed
+        """Setup HuggingFace Inference API client."""
+        import os
+        
+        # Get HF token from environment
+        hf_token = os.getenv('HF_TOKEN')
+        if not hf_token:
+            raise ValueError("HF_TOKEN not found in environment variables")
+        
+        # Store API configuration
+        self.hf_api_token = hf_token
+        self.hf_model = getattr(Config, 'HF_FALLBACK_MODEL', 'microsoft/phi-2')
+        self.hf_api_url = f"https://api-inference.huggingface.co/models/{self.hf_model}"
+        
+        # Mark as using HF API
+        self.hf_pipeline = "api"  # Flag to indicate API mode
         self.model = None
+        
+        logger.info(f"HuggingFace Inference API configured for model: {self.hf_model}")
     
     def generate(
         self,
@@ -229,25 +230,18 @@ professionals for serious concerns."""
         
         system = system_instruction or default_system
         
-        prompt_parts = [system, "\n"]
+        prompt_parts = [system]
         
         if context:
             prompt_parts.extend([
-                "\n## Medical Reference Context",
-                "Use ONLY the following verified medical information to answer the question:",
-                context,
-                "\n"
+                "\n\n## Medical Reference Context",
+                "Use ONLY the following verified medical information to answer the question:\n",
+                context
             ])
         
         prompt_parts.extend([
-            "\n## Patient Question",
-            query,
-            "\n",
-            "## Your Response",
-            "Provide a clear, accurate response based on the reference context above. ",
-            "Structure your answer professionally with relevant details. ",
-            "If the information is not in the context, clearly state that and recommend ",
-            "consulting a healthcare professional."
+            "\n\n## Patient Question",
+            query
         ])
         
         return "\n".join(prompt_parts)
@@ -370,31 +364,95 @@ Technical details: {error[:100]}"""
         return "\n\n".join(context_parts)
     
     def test_connection(self) -> bool:
-        """Test Gemini API connection"""
+        """Test LLM connection (Gemini or HF fallback)"""
         try:
             if self.use_hf and self.hf_pipeline is not None:
-                out = self.hf_pipeline("Hello, this is a test.", max_length=getattr(Config, 'HF_MAX_TOKENS', 32))
-                text = None
-                if isinstance(out, list) and out:
-                    text = out[0].get('generated_text') or out[0].get('generated_text') or out[0].get('text')
-                return bool(text)
+                logger.info("Testing HuggingFace Inference API connection...")
+                try:
+                    test_response = self._generate_hf("Hello, test")
+                    if test_response:
+                        logger.info("✅ HuggingFace Inference API connected successfully")
+                        return True
+                except Exception as e:
+                    logger.error(f"HF API test failed: {e}")
+                    return False
+                return False
 
+            logger.info("Testing Gemini API connection...")
             response = self.model.generate_content("Hello, this is a test.")
-            return bool(getattr(response, 'text', None))
+            if getattr(response, 'text', None):
+                logger.info("✅ Gemini API connected successfully")
+                return True
+            return False
         except Exception as e:
-            logger.error(f"Connection test failed: {str(e)}")
+            logger.warning(f"⚠️ Gemini connection failed: {str(e)}")
+            # Activate HuggingFace fallback if enabled
+            if not self.use_hf and getattr(Config, 'USE_HF_FALLBACK', False):
+                try:
+                    logger.info("🔄 Attempting HuggingFace fallback...")
+                    self._setup_hf_model()
+                    self.use_hf = True
+                    logger.info("✅ HuggingFace fallback activated successfully")
+                    return True
+                except Exception as hf_e:
+                    logger.error(f"❌ HuggingFace fallback failed: {str(hf_e)}")
+                    return False
             return False
 
     def _generate_hf(self, prompt: str) -> str:
-        """Generate text using the HF pipeline (text2text or text-generation)."""
+        """Generate text using HuggingFace Inference API."""
         if self.hf_pipeline is None:
-            raise RuntimeError("HF pipeline is not initialized")
-
-        # transformers pipelines return a list of dicts
-        out = self.hf_pipeline(prompt, max_length=getattr(Config, 'HF_MAX_TOKENS', 256), do_sample=False)
-        if isinstance(out, list) and out:
-            candidate = out[0]
-            return candidate.get('generated_text') or candidate.get('text') or ''
-        if isinstance(out, dict):
-            return out.get('generated_text') or out.get('text') or ''
-        return str(out)
+            raise RuntimeError("HF API is not initialized")
+        
+        import requests
+        import time
+        
+        headers = {"Authorization": f"Bearer {self.hf_api_token}"}
+        
+        payload = {
+            "inputs": prompt,
+            "parameters": {
+                "max_new_tokens": getattr(Config, 'HF_MAX_TOKENS', 512),
+                "temperature": 0.7,
+                "top_p": 0.9,
+                "repetition_penalty": 1.2,
+                "return_full_text": False  # Only return generated text, not input
+            }
+        }
+        
+        # Retry logic for model loading
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                response = requests.post(self.hf_api_url, headers=headers, json=payload, timeout=60)
+                
+                if response.status_code == 503:
+                    # Model is loading
+                    logger.info(f"Model loading... (attempt {attempt+1}/{max_retries})")
+                    time.sleep(20)  # Wait for model to load
+                    continue
+                    
+                response.raise_for_status()
+                result = response.json()
+                
+                # Extract generated text
+                if isinstance(result, list) and result:
+                    generated = result[0].get('generated_text', '')
+                elif isinstance(result, dict):
+                    generated = result.get('generated_text', '')
+                else:
+                    generated = str(result)
+                
+                # Clean up output
+                if generated.startswith(prompt):
+                    generated = generated[len(prompt):].strip()
+                    
+                return generated
+                
+            except requests.exceptions.RequestException as e:
+                logger.error(f"HF API request failed (attempt {attempt+1}): {e}")
+                if attempt == max_retries - 1:
+                    raise
+                time.sleep(5)
+        
+        return "I apologize, but I'm having trouble generating a response. Please try again."
