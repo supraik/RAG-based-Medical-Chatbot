@@ -1,8 +1,8 @@
-# HaleAI - RAG-based Medical Chatbot 🏥🤖
+# HaleAI - RAG-based Medical Chatbot 
 
 A Retrieval-Augmented Generation (RAG) chatbot designed for medical document Q&A. Upload your medical PDFs and chat with them using state-of-the-art AI models.
 
-## 🌟 Features
+## Features
 
 - **PDF Processing**: Automatically extract and process medical documents
 - **Vector Search**: Semantic search using Pinecone vector database
@@ -10,14 +10,14 @@ A Retrieval-Augmented Generation (RAG) chatbot designed for medical document Q&A
 - **100% Free**: Uses free tier APIs (Pinecone + Hugging Face)
 - **Easy Setup**: Simple CLI interface with step-by-step guidance
 
-## 📋 Prerequisites
+##  Prerequisites
 
 - Python 3.8 or higher
 - Internet connection (for API calls)
 - Pinecone account (free tier available)
 - Hugging Face account (free)
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### 1. Clone the Repository
 
@@ -84,7 +84,7 @@ HF_TOKEN=your_actual_huggingface_token
 
 Place your PDF files in the `data/` folder
 
-## 📂 Project Structure
+##  Project Structure
 
 ```
 haleai/
@@ -100,7 +100,7 @@ haleai/
     └── your_medical_pdfs.pdf
 ```
 
-## 💻 Usage
+## Usage
 
 ### Step 1: Setup (First Time Only)
 
@@ -130,7 +130,7 @@ Now you can ask questions about your medical documents!
 - "How is hypertension treated?"
 - "What are the side effects of this medication?"
 
-## ⚙️ Configuration
+##  Configuration
 
 You can customize the chatbot by editing `config.py`:
 
@@ -159,7 +159,7 @@ If you experience memory issues:
 CHUNK_SIZE = 500  # Reduce from default 1000
 ```
 
-## 🐛 Troubleshooting
+##  Troubleshooting
 
 ### First Query is Very Slow (20-60 seconds)
 
@@ -185,7 +185,7 @@ If embeddings cause problems:
 - Reduce `CHUNK_SIZE` in `config.py`
 - Make sure your PDFs are text-based (not scanned images)
 
-## 💰 Cost Breakdown
+##  Cost Breakdown
 
 | Resource | Free Tier | Paid Option |
 |----------|-----------|-------------|
@@ -212,40 +212,18 @@ If embeddings cause problems:
 4. **Query Processing**: User questions are embedded and matched against stored vectors
 5. **Response Generation**: Relevant context is sent to the LLM to generate answers
 
-## 📝 Best Practices
+##  Best Practices
 
 - **Ask Specific Questions**: Clear, focused questions get better answers
 - **Wait Patiently**: First query takes longer (model loading)
 - **Check Sources**: Always verify medical information from authoritative sources
 - **Update Documents**: Re-run setup when adding new PDFs
 
-## ⚠️ Disclaimer
+##  Disclaimer
 
 This chatbot is for informational and educational purposes only. It is not a substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of qualified health providers with any questions you may have regarding medical conditions.
 
-## 🤝 Contributing
+##  Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-## 📄 License
-
-This project is open source and available under the MIT License.
-
-## 🙋 Support
-
-If you encounter issues:
-1. Check this README's troubleshooting section
-2. Review your API keys and configuration
-3. Open an issue on GitHub with detailed error messages
-
-## 🔮 Future Enhancements
-
-- [ ] Support for multiple document formats (DOCX, TXT)
-- [ ] Web UI interface
-- [ ] Conversation history
-- [ ] Source citation in responses
-- [ ] Multi-language support
-
----
-
-**Made with ❤️ for the medical AI community**
