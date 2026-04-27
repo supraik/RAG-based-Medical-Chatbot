@@ -1,229 +1,160 @@
-# HaleAI - RAG-based Medical Chatbot 
+# HaleAI - RAG-based Medical Chatbot
 
-A Retrieval-Augmented Generation (RAG) chatbot designed for medical document Q&A. Upload your medical PDFs and chat with them using state-of-the-art AI models.
+HaleAI is a medical RAG chatbot that uses a Python backend, Google Gemini, Pinecone, LangChain, and a static HTML frontend.
 
-## Features
+## What is used
 
-- **PDF Processing**: Automatically extract and process medical documents
-- **Vector Search**: Semantic search using Pinecone vector database
-- **AI-Powered Responses**: Get accurate answers using Hugging Face's open-source LLMs
-- **100% Free**: Uses free tier APIs (Pinecone + Hugging Face)
-- **Easy Setup**: Simple CLI interface with step-by-step guidance
+- Python backend with FastAPI and Uvicorn
+- Google Gemini for answer generation
+- Pinecone for vector storage and retrieval
+- LangChain, PyPDF, and Sentence Transformers for document processing
+- A static frontend in [frontend/index.html](frontend/index.html) that loads React, Tailwind, Babel, and Recharts from CDNs
 
-##  Prerequisites
+## Repository layout
 
-- Python 3.8 or higher
-- Internet connection (for API calls)
-- Pinecone account (free tier available)
-- Hugging Face account (free)
-
-##  Quick Start
-
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/supraik/RAG-based-Medical-Chatbot.git
-cd RAG-based-Medical-Chatbot
+```text
+backend/
+  backend_api.py      # FastAPI server used by the frontend
+  main.py             # CLI entry point for one-time knowledge-base setup
+  chatbot.py          # RAG orchestration
+  data_processor.py   # PDF loading, chunking, embeddings
+  vector_store.py     # Pinecone integration
+  llm_handler.py      # Gemini / fallback generation
+  config.py           # Environment and runtime configuration
+frontend/
+  index.html          # Static browser app
+data/
+  *.pdf               # Your source documents
 ```
 
-### 2. Set Up Virtual Environment
+## Prerequisites
 
-**Using venv:**
-```bash
-# Create virtual environment
-python -m venv venv
+- Python 3.8 or newer
+- A Google API key that can access Gemini models
+- A Pinecone API key
+- Internet access for model and CDN requests
 
-# Activate it
-# On Windows:
-venv\Scripts\activate
+## Environment variables
 
-# On Mac/Linux:
-source venv/bin/activate
-```
-
-**Using conda (alternative):**
-```bash
-conda create -n HaleAI python=3.11 -y
-conda activate HaleAI
-```
-
-### 3. Install Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-**Or install packages individually:**
-```bash
-pip install -U "langchain>=0.3.7" "langchain-core>=0.3.7" "langchain-pinecone>=0.1.0" "langchain-openai>=0.2.0" packaging>=24.2
-```
-
-### 4. Get Your API Keys
-
-#### Pinecone API Key
-1. Go to [https://app.pinecone.io/](https://app.pinecone.io/)
-2. Sign up for a free account
-3. Create a new project
-4. Copy your API key from the dashboard
-
-#### Hugging Face Token
-1. Go to [https://huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)
-2. Create a new token with "read" permissions
-3. Copy the token
-
-### 5. Configure Environment Variables
-
-Create a `.env` file in the project root:
+Create a root `.env` file with your keys:
 
 ```env
-PINECONE_API_KEY=your_actual_pinecone_key
-HF_TOKEN=your_actual_huggingface_token
+PINECONE_API_KEY=your_pinecone_key
+GEMINI_API_KEY=your_gemini_key
+GEMINI_MODEL=gemini-2.5-flash
 ```
 
-### 6. Add Your Medical PDFs
+Notes:
+- `.env` is already ignored by git.
+- `GEMINI_MODEL` is optional, but it is the cleanest way to switch models.
+- The code defaults to a supported Gemini model if you do not set `GEMINI_MODEL` explicitly.
 
-Place your PDF files in the `data/` folder
-
-##  Project Structure
-
-```
-haleai/
-├── main.py                 # Main entry point
-├── chatbot.py             # Chatbot logic
-├── llm_handler.py         # LLM interaction handler
-├── vector_store.py        # Pinecone vector store management
-├── data_processor.py      # PDF processing and chunking
-├── config.py              # Configuration settings
-├── requirements.txt       # Python dependencies
-├── .env                   # Environment variables (API keys)
-└── data/                  # Your medical PDF files
-    └── your_medical_pdfs.pdf
-```
-
-## Usage
-
-### Step 1: Setup (First Time Only)
+## Install dependencies
 
 ```bash
-python main.py
-# Select option 1 (Setup)
+cd /workspaces/RAG-based-Medical-Chatbot
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r backend/requirements.txt
 ```
 
-This will:
-- Process your PDF documents
-- Create embeddings
-- Upload to Pinecone vector database
+What this does:
+- Creates an isolated Python environment in `.venv`
+- Installs the backend packages needed by the API, document processing, Pinecone, and Gemini integration
 
-**Note:** This step may take a few minutes depending on the size of your documents.
+## End-to-end run flow
 
-### Step 2: Chat with Your Documents
+### 1. Add your PDFs
+
+Put your medical PDF files in the [data](data) folder.
+
+### 2. Build the knowledge base once
+
+Run the CLI setup flow if you are adding documents for the first time or updating them:
 
 ```bash
-python main.py
-# Select option 2 (Chat)
+cd /workspaces/RAG-based-Medical-Chatbot
+. .venv/bin/activate
+python backend/main.py
 ```
 
-Now you can ask questions about your medical documents!
+Then choose:
+- `1` to set up the knowledge base
 
-**Example Questions:**
-- "What are the symptoms of diabetes?"
-- "How is hypertension treated?"
-- "What are the side effects of this medication?"
+What this does:
+- Loads PDFs from `data/`
+- Splits them into chunks
+- Creates embeddings
+- Uploads them to Pinecone
 
-##  Configuration
+Why this is necessary:
+- The FastAPI server connects to the existing Pinecone index. It does not ingest PDFs on every startup.
 
-You can customize the chatbot by editing `config.py`:
+### 3. Start the backend API
 
-### Change the LLM Model
-
-Default model: `mistralai/Mistral-7B-Instruct-v0.1`
-
-**Alternative models:**
-
-```python
-# Fast and efficient
-LLM_MODEL = "microsoft/phi-2"
-
-# Good balance of speed and quality
-LLM_MODEL = "HuggingFaceH4/zephyr-7b-beta"
-
-# High quality (requires HF license acceptance)
-LLM_MODEL = "meta-llama/Llama-2-7b-chat-hf"
+```bash
+cd /workspaces/RAG-based-Medical-Chatbot
+. .venv/bin/activate
+python backend/backend_api.py
 ```
 
-### Adjust Chunk Size
+What this does:
+- Starts the FastAPI server on `http://localhost:8000`
+- Exposes chat, streaming chat, health, analytics, and conversation endpoints
 
-If you experience memory issues:
+Why this is necessary:
+- The frontend sends requests to this API.
 
-```python
-CHUNK_SIZE = 500  # Reduce from default 1000
+### 4. Open the frontend
+
+Serve [frontend/index.html](frontend/index.html) with a local web server, for example:
+
+```bash
+cd /workspaces/RAG-based-Medical-Chatbot/frontend
+python3 -m http.server 5500
 ```
 
-##  Troubleshooting
+Then open:
 
-### First Query is Very Slow (20-60 seconds)
+```text
+http://localhost:5500
+```
 
-**This is normal!** The model needs to load for the first time. Subsequent queries will be much faster (3-10 seconds).
+What this does:
+- Serves the static HTML app from a local HTTP origin
 
-### Rate Limit Errors
+Why this is necessary:
+- The frontend uses `fetch()` to call the backend, and browsers handle that more reliably from an HTTP server than from a raw file URL.
 
-- Free Hugging Face API allows ~100 requests/hour
-- Wait a minute between queries if you hit limits
-- Consider upgrading to Pro ($9/month) for unlimited access
+## Running in Codespaces
 
-### Model Not Working
+In GitHub Codespaces:
 
-Try these steps:
-1. Check your API keys are correct in `.env`
-2. Ensure you have internet connection
-3. Try an alternative model (like `microsoft/phi-2`)
-4. Check [Hugging Face status page](https://status.huggingface.co/)
+1. Create `.venv` and install backend dependencies.
+2. Add your `.env` file in the repository root.
+3. Run the one-time knowledge-base setup from `backend/main.py` if your Pinecone index is empty.
+4. Start `backend/backend_api.py`.
+5. Serve `frontend/index.html` with `python3 -m http.server 5500` or Live Server.
 
-### Embedding Issues
+## Troubleshooting
 
-If embeddings cause problems:
-- Reduce `CHUNK_SIZE` in `config.py`
-- Make sure your PDFs are text-based (not scanned images)
+- If the backend exits immediately, check that `.env` contains `PINECONE_API_KEY` and `GEMINI_API_KEY`.
+- If you see import errors, make sure you installed the packages into `.venv`.
+- If the frontend shows connection errors, confirm the backend is running on port `8000`.
+- If the knowledge base is empty, rerun the setup step from `backend/main.py` after adding PDFs.
 
-##  Cost Breakdown
+## Technologies used
 
-| Resource | Free Tier | Paid Option |
-|----------|-----------|-------------|
-| **Pinecone** | 1 index, 100K vectors | Starts at $70/month |
-| **Hugging Face API** | ~100 requests/hour | Pro: $9/month (unlimited) |
-| **Embeddings** | Unlimited (local) | Free |
-| **Total Cost** | **$0** | Optional upgrades |
+- FastAPI
+- Uvicorn
+- Google Generative AI
+- Pinecone
+- LangChain ecosystem
+- Sentence Transformers
+- PyPDF
+- Static HTML, React CDN, Tailwind CDN, Babel standalone, Recharts CDN
 
-## 🔧 Technical Details
+## Disclaimer
 
-### Technologies Used
-
-- **LangChain**: Framework for LLM applications
-- **Pinecone**: Vector database for semantic search
-- **Hugging Face**: Open-source LLM models
-- **PyPDF**: PDF text extraction
-- **Sentence Transformers**: Text embeddings
-
-### How It Works
-
-1. **Document Processing**: PDFs are split into manageable chunks
-2. **Embedding Creation**: Text chunks are converted to vector embeddings
-3. **Vector Storage**: Embeddings are stored in Pinecone
-4. **Query Processing**: User questions are embedded and matched against stored vectors
-5. **Response Generation**: Relevant context is sent to the LLM to generate answers
-
-##  Best Practices
-
-- **Ask Specific Questions**: Clear, focused questions get better answers
-- **Wait Patiently**: First query takes longer (model loading)
-- **Check Sources**: Always verify medical information from authoritative sources
-- **Update Documents**: Re-run setup when adding new PDFs
-
-##  Disclaimer
-
-This chatbot is for informational and educational purposes only. It is not a substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of qualified health providers with any questions you may have regarding medical conditions.
-
-##  Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
+This project is for informational and educational purposes only. It is not a substitute for professional medical advice, diagnosis, or treatment.
