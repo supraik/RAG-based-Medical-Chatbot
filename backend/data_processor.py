@@ -8,7 +8,12 @@ from pathlib import Path
 from tqdm import tqdm
 
 from langchain_community.document_loaders import PyPDFLoader, DirectoryLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+# LangChain splitters moved to a dedicated package in newer versions.
+try:
+    from langchain_text_splitters import RecursiveCharacterTextSplitter
+except Exception:
+    from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 # Try multiple embeddings imports
 try:

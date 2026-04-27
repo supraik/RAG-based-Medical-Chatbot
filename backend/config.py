@@ -36,7 +36,7 @@ class Config:
     RERANK_TOP_K: int = 3  # Final top documents after reranking
     
     # Gemini Configuration
-    GEMINI_MODEL: str = "gemini-2.0-flash"  # Gemini model
+    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
     GEMINI_TEMPERATURE: float = 0.3  # Lower for more consistent medical responses
     GEMINI_MAX_OUTPUT_TOKENS: int = 1024
     GEMINI_TOP_P: float = 0.8
