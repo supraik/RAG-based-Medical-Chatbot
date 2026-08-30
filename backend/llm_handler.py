@@ -21,33 +21,16 @@ logger = logging.getLogger(__name__)
 
 
 class LLMHandler:
-    """Handles LLM operations via Google Gemini API with a Hugging Face fallback."""
+    """Handles LLM operations via Google Gemini API."""
     
     def __init__(self):
-        """Initialize Gemini API client, fall back to Hugging Face if needed."""
-        # Flags and placeholders for fallback
-        self.use_hf: bool = False
-        self.hf_pipeline = None
+        """Initialize Gemini API client."""
         self.model = None
         self.chat = None
 
-        # Try Gemini first; if anything fails and HF fallback enabled, initialize HF
-        try:
-            self._configure_gemini()
-            self._setup_model()
-            logger.info(f"✅ Gemini model initialized: {Config.GEMINI_MODEL}")
-        except Exception as e:
-            logger.warning("Gemini initialization failed, attempting Hugging Face fallback: %s", e, exc_info=True)
-            if getattr(Config, 'USE_HF_FALLBACK', False):
-                try:
-                    self._setup_hf_model()
-                    self.use_hf = True
-                    logger.info("✅ Hugging Face fallback initialized: %s", Config.HF_FALLBACK_MODEL)
-                except Exception as hf_e:
-                    logger.error("Hugging Face fallback failed: %s", hf_e, exc_info=True)
-                    raise
-            else:
-                raise
+        self._configure_gemini()
+        self._setup_model()
+        logger.info(f"✅ Gemini model initialized: {Config.GEMINI_MODEL}")
     
     def _configure_gemini(self) -> None:
         """Configure Gemini API"""
@@ -83,25 +66,6 @@ class LLMHandler:
         
         # Create chat session for context management
         self.chat = None
-
-    def _setup_hf_model(self) -> None:
-        """Setup a Hugging Face pipeline as a fallback model (text2text)."""
-        try:
-            from transformers import pipeline
-        except Exception as e:
-            logger.error("transformers library is required for HF fallback: %s", e)
-            raise
-
-        model_name = getattr(Config, 'HF_FALLBACK_MODEL', 'google/flan-t5-small')
-        # Use text2text-generation (works well with FLAN-style models)
-        try:
-            self.hf_pipeline = pipeline('text2text-generation', model=model_name, device=-1)
-        except Exception:
-            # Try text-generation as a fallback
-            self.hf_pipeline = pipeline('text-generation', model=model_name, device=-1)
-
-        # mark model as HF-backed
-        self.model = None
     
     def generate(
         self,
@@ -142,9 +106,6 @@ class LLMHandler:
             # Build final prompt
             full_prompt = self._build_prompt(prompt, combined_context, system_instruction)
 
-            if self.use_hf and self.hf_pipeline is not None:
-                return self._post_process_response(self._generate_hf(full_prompt))
-
             # Generate response via Gemini
             response = self.model.generate_content(full_prompt)
 
@@ -159,14 +120,6 @@ class LLMHandler:
 
         except Exception as e:
             logger.error(f"Error generating response: {str(e)}", exc_info=True)
-            # If Gemini failed at runtime and HF fallback is enabled, try HF
-            if not self.use_hf and getattr(Config, 'USE_HF_FALLBACK', False):
-                try:
-                    self._setup_hf_model()
-                    self.use_hf = True
-                    return self._post_process_response(self._generate_hf(full_prompt))
-                except Exception:
-                    logger.exception("HF fallback failed after Gemini error")
             return self._get_error_response(str(e))
     
     def generate_with_chat(
@@ -187,12 +140,6 @@ class LLMHandler:
         try:
             # Normalize history into a list of {'user':..., 'bot':...}
             normalized = self._normalize_history_turns(history)
-
-            # If HF fallback is active, include normalized history in the prompt
-            if self.use_hf and self.hf_pipeline is not None:
-                history_text = self._format_history_for_prompt(normalized)
-                full_prompt = self._build_prompt(message, history_text, None)
-                return self._post_process_response(self._generate_hf(full_prompt))
 
             # Convert normalized history into Gemini chat history shape
             gemini_history = []
@@ -372,29 +319,8 @@ Technical details: {error[:100]}"""
     def test_connection(self) -> bool:
         """Test Gemini API connection"""
         try:
-            if self.use_hf and self.hf_pipeline is not None:
-                out = self.hf_pipeline("Hello, this is a test.", max_length=getattr(Config, 'HF_MAX_TOKENS', 32))
-                text = None
-                if isinstance(out, list) and out:
-                    text = out[0].get('generated_text') or out[0].get('generated_text') or out[0].get('text')
-                return bool(text)
-
             response = self.model.generate_content("Hello, this is a test.")
             return bool(getattr(response, 'text', None))
         except Exception as e:
             logger.error(f"Connection test failed: {str(e)}")
             return False
-
-    def _generate_hf(self, prompt: str) -> str:
-        """Generate text using the HF pipeline (text2text or text-generation)."""
-        if self.hf_pipeline is None:
-            raise RuntimeError("HF pipeline is not initialized")
-
-        # transformers pipelines return a list of dicts
-        out = self.hf_pipeline(prompt, max_length=getattr(Config, 'HF_MAX_TOKENS', 256), do_sample=False)
-        if isinstance(out, list) and out:
-            candidate = out[0]
-            return candidate.get('generated_text') or candidate.get('text') or ''
-        if isinstance(out, dict):
-            return out.get('generated_text') or out.get('text') or ''
-        return str(out)

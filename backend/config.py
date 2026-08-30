@@ -42,11 +42,6 @@ class Config:
     GEMINI_TOP_P: float = 0.8
     GEMINI_TOP_K: int = 40
 
-    # Hugging Face fallback (used when Gemini API key/connection fails)
-    USE_HF_FALLBACK: bool = True
-    HF_FALLBACK_MODEL: str = os.getenv("HF_FALLBACK_MODEL", "google/flan-t5-small")
-    HF_MAX_TOKENS: int = 256
-    
     # Safety Settings
     ENABLE_SAFETY_FILTERS: bool = True
     
